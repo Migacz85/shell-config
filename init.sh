@@ -6,11 +6,17 @@
 
 ##### Config starts here:
 
+apt apt update &&
+apt apt upgrade &&
+
 apt install git &&
 apt install ranger &&
+apt install vim &&
+
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf &&
 ~/.fzf/install
 source ~/.bashrc
+
 rm -R shell-config
 
-echo "All done, git, ranger and fzf autocompletion is installed. Press ctrl+R to browse history"
+echo "All done, git, ranger, vim and fzf autocompletion is installed. Press ctrl+R to browse history"
