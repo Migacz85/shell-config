@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Script will setup LAMP and install WordPress in the /var/www/html/ folder. 
+# Tested on Debian 12
+
 # Run script like that:
 # git clone --depth 1 https://github.com/Migacz85/shell-config && chmod +x -R shell-config/ && ./shell-config/wplamp.sh
 
@@ -7,9 +10,9 @@ install_dir="/var/www/html"
 #Creating Random WP Database Credenitals
 db_name="wp`date +%s`"
 db_user=$db_name
-db_password=`date |md5sum |cut -c '1-12'`
+db_password=`date |md5sum |cut -c '1-6'`
 sleep 1
-mysqlrootpass=`date |md5sum |cut -c '1-12'`
+mysqlrootpass=`date |md5sum |cut -c '1-6'`
 sleep 1
 
 #### Install Packages for https and mysql
@@ -28,22 +31,13 @@ systemctl start apache2
 systemctl enable mysql
 systemctl start mysql
 
-# /usr/bin/mysql -e "USE mysql;"
-# /usr/bin/mysql -e "UPDATE user SET Password=PASSWORD($mysqlrootpass) WHERE user='root';"
-# /usr/bin/mysql -e "FLUSH PRIVILEGES;"
-# touch /root/.my.cnf
-# chmod 640 /root/.my.cnf
-# echo "[client]">>/root/.my.cnf
-# echo "user=root">>/root/.my.cnf
-# echo "password="$mysqlrootpass>>/root/.my.cnf
-
+echo "I want to create new mysql databse name and user. Hit enter 4 times"
 mysql -u root -p -e "CREATE DATABASE $db_name;"
 mysql -u root -p -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_password';"
 mysql -u root -p -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost';"
 mysql -u root -p -e "FLUSH PRIVILEGES;" 
 
-
-####Install PHP
+#### Install PHP
 apt -y install php php-bz2 php-mysqli php-curl php-gd php-intl php-common php-mbstring php-xml
 
 sed -i '0,/AllowOverride\ None/! {0,/AllowOverride\ None/ s/AllowOverride\ None/AllowOverride\ All/}' /etc/apache2/apache2.conf #Allow htaccess usage
@@ -98,9 +92,11 @@ grep -A50 'table_prefix' $install_dir/wp-config.php > /tmp/wp-tmp-config
 /usr/bin/mysql -u root -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost';"
  
 ######Display generated passwords to log file.
-echo "Database Name: " $db_name
-echo "Database User: " $db_user
-echo "Database Password: " $db_password
-echo "Mysql root password: " $mysqlrootpass
+echo "Database Name: " $db_name >> pass.deleteme
+echo "Database User: " $db_user >> pass.deleteme
+echo "Database Password: " $db_password >> pass.deleteme
+echo "Mysql root password: " $mysqlrootpass >> pass.deleteme
+
+cat pass.deleteme
 
 rm -rf shell-config
