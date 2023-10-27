@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Run script like that:
-# git clone --depth 1 https://github.com/Migacz85/shell-config && chmod +x -R shell-config/ && ./shell-config/wp-lamp.sh
+# git clone --depth 1 https://github.com/Migacz85/shell-config && chmod +x -R shell-config/ && ./shell-config/wplamp.sh
 
 install_dir="/var/www/html"
 #Creating Random WP Database Credenitals
@@ -16,7 +16,7 @@ sleep 1
 apt -y update 
 apt -y upgrade
 apt -y install apache2
-apt -y install mysql-server
+apt -y install mariadb-server
 
 #### Start http
 rm /var/www/html/index.html
@@ -28,14 +28,21 @@ systemctl start apache2
 systemctl enable mysql
 systemctl start mysql
 
-/usr/bin/mysql -e "USE mysql;"
-/usr/bin/mysql -e "UPDATE user SET Password=PASSWORD($mysqlrootpass) WHERE user='root';"
-/usr/bin/mysql -e "FLUSH PRIVILEGES;"
-touch /root/.my.cnf
-chmod 640 /root/.my.cnf
-echo "[client]">>/root/.my.cnf
-echo "user=root">>/root/.my.cnf
-echo "password="$mysqlrootpass>>/root/.my.cnf
+# /usr/bin/mysql -e "USE mysql;"
+# /usr/bin/mysql -e "UPDATE user SET Password=PASSWORD($mysqlrootpass) WHERE user='root';"
+# /usr/bin/mysql -e "FLUSH PRIVILEGES;"
+# touch /root/.my.cnf
+# chmod 640 /root/.my.cnf
+# echo "[client]">>/root/.my.cnf
+# echo "user=root">>/root/.my.cnf
+# echo "password="$mysqlrootpass>>/root/.my.cnf
+
+mysql -u root -p -e "CREATE DATABASE $db_name;"
+mysql -u root -p -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_password';"
+mysql -u root -p -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost';"
+mysql -u root -p -e "FLUSH PRIVILEGES;" 
+
+
 ####Install PHP
 apt -y install php php-bz2 php-mysqli php-curl php-gd php-intl php-common php-mbstring php-xml
 
@@ -95,4 +102,5 @@ echo "Database Name: " $db_name
 echo "Database User: " $db_user
 echo "Database Password: " $db_password
 echo "Mysql root password: " $mysqlrootpass
- 
+
+rm -rf shell-config
