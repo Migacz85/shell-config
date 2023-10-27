@@ -6,10 +6,9 @@
 
 ##### Config starts here:
 
-apt apt update &&
-apt apt upgrade &&
+apt update &&
+apt upgrade &&
 
-apt install git &&
 apt install ranger &&
 apt install vim &&
 
