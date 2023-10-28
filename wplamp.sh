@@ -37,7 +37,7 @@ mysql -u root -p -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_passw
 mysql -u root -p -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'localhost';"
 mysql -u root -p -e "FLUSH PRIVILEGES;" 
 
-#### Install PHP
+####- I.livednstall PHP
 apt -y install php php-bz2 php-mysqli php-curl php-gd php-intl php-common php-mbstring php-xml
 
 sed -i '0,/AllowOverride\ None/! {0,/AllowOverride\ None/ s/AllowOverride\ None/AllowOverride\ All/}' /etc/apache2/apache2.conf #Allow htaccess usage

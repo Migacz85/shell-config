@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # This script is for configuration of fresh bash on Debian
 
 # Here is example how you can run bash script that is held in github repository
@@ -17,6 +18,6 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf &&
 ~/.fzf/install
 source ~/.bashrc
 
-rm -R shell-config
+rm -R shell-confi 
 
 echo "All done, git, ranger, vim and fzf autocompletion is installed. Press ctrl+R to browse history"
