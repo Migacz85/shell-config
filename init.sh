@@ -8,16 +8,14 @@
 
 ##### Config starts here:
 
-apt update &&
-apt upgrade &&
-
 apt install ranger &&
 apt install vim &&
+apt install xsel &&
 
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf &&
 ~/.fzf/install
 source ~/.bashrc
 
-rm -R shell-confi 
+rm -R shell-config
 
 echo "All done, git, ranger, vim and fzf autocompletion is installed. Press ctrl+R to browse history"
