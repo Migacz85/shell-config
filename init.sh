@@ -8,9 +8,9 @@
 
 ##### Config starts here:
 
-apt install ranger &&
-apt install vim &&
-apt install xsel &&
+apt install -y ranger &&
+apt install -y vim &&
+apt install -y xsel &&
 
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf &&
 ~/.fzf/install
