@@ -64,7 +64,7 @@ echo ""
 
 # 3. Display Plugin Versions and Update Availability
 echo "== Plugin Versions and Updates =="
-wp plugin list 
+wp plugin list  --allow-root
 
 echo "For copy paste:"
 
