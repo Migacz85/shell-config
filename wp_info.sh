@@ -3,18 +3,9 @@
 # Function to install WP-CLI
 install_wp_cli() {
     echo "Installing WP-CLI..."
-    
-    # Download the WP-CLI phar file
-    curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/installer.sh
 
-    # Make the installer executable
-    chmod +x installer.sh
-
-    # Run the installer
-    sudo bash installer.sh
-
-    # Remove the installer
-    rm installer.sh
+    # Download the WP-CLI phar file using wget
+    wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 
     # Move the wp-cli.phar to /usr/local/bin/wp
     sudo mv wp-cli.phar /usr/local/bin/wp
