@@ -64,21 +64,15 @@ echo ""
 
 # 3. Display Plugin Versions and Update Availability
 echo "== Plugin Versions and Updates =="
-#wp plugin list --fields=name,version,update_version --format=table --allow-root | awk 'NR>1 && $3 != "" {print "" $1 "\t " $2 "\t" $3}'
+wp plugin list 
 
-wp plugin list --fields=name,version,update_version --format=table --allow-root | awk 'NR>1 {
-    # Replace dashes with spaces and capitalize the first letter of each word
-    gsub(/-/, " ", $1);
-    for (i=1; i<=NF; i++) {
-        $i = toupper(substr($i, 1, 1)) tolower(substr($i, 2));
-    }
-    
-    # Check for available updates and print output
-    printf "%-25s %-20s %s\n", $1, $2, $3 ? $3 : "No updates available";
-}'
+echo "For copy paste:"
 
+wp plugin list --fields=name,version,update_version --format=table --allow-root | awk 'NR>1 && $3 != "" {gsub(/-/, " ", $1); split($1, a, " "); for (i=1; i<=length(a); i++) { a[i] = toupper(substr(a[i], 1, 1)) tolower(substr(a[i], 2)); } $1 = a[1]; for (i=2; i<=length(a); i++) $1 = $1 " " a[i]; printf "%s\t%s\t%s\n", $1, $2, $3}'
 
 echo ""
 
-echo "Test sending mails:"
+echo "Test sending mail:"
 wp eval 'wp_mail("marcin@matrixinternet.ie", "Test Email", "This is a test email from WP-CLI.");' --allow-root
+
+echo "Check your mailbox"
