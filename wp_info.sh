@@ -32,8 +32,9 @@ fi
 ALLOW_ROOT="--allow-root"
 
 # 1. Display WordPress core version and update availability
-echo "== WordPress Core Version =="
+echo "== WordPress Core Current Version =="
 core_version=$(wp core version $ALLOW_ROOT)
+echo "== WordPress Core Update Version Avaliable =="
 core_update=$(wp core check-update $ALLOW_ROOT)
 
 echo "Current Version: $core_version"
