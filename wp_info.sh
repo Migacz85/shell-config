@@ -34,7 +34,7 @@ ALLOW_ROOT="--allow-root"
 # 1. Display WordPress core version and update availability
 echo "== WordPress Core Version =="
 core_version=$(wp core version $ALLOW_ROOT)
-core_update=$(wp core check-update $ALLOW_ROOT | awk 'NR>1 {print "Current Version: " $1 ", Update Available: " $2}')
+core_update=$(wp core check-update $ALLOW_ROOT)
 
 echo "Current Version: $core_version"
 if [ -z "$core_update" ]; then
@@ -64,7 +64,19 @@ echo ""
 
 # 3. Display Plugin Versions and Update Availability
 echo "== Plugin Versions and Updates =="
-wp plugin list --fields=name,version,update_version --format=table --allow-root | awk 'NR>1 && $3 != "" {print "" $1 "\t " $2 "\t" $3}'
+#wp plugin list --fields=name,version,update_version --format=table --allow-root | awk 'NR>1 && $3 != "" {print "" $1 "\t " $2 "\t" $3}'
+
+wp plugin list --fields=name,version,update_version --format=table --allow-root | awk 'NR>1 {
+    # Replace dashes with spaces and capitalize the first letter of each word
+    gsub(/-/, " ", $1);
+    for (i=1; i<=NF; i++) {
+        $i = toupper(substr($i, 1, 1)) tolower(substr($i, 2));
+    }
+    
+    # Check for available updates and print output
+    printf "%-25s %-20s %s\n", $1, $2, $3 ? $3 : "No updates available";
+}'
+
 
 echo ""
 
