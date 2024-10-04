@@ -1,9 +1,40 @@
 #!/bin/bash
+
+# Function to install WP-CLI
+install_wp_cli() {
+    echo "Installing WP-CLI..."
+    
+    # Download the WP-CLI phar file
+    curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/installer.sh
+
+    # Make the installer executable
+    chmod +x installer.sh
+
+    # Run the installer
+    sudo bash installer.sh
+
+    # Remove the installer
+    rm installer.sh
+
+    # Move the wp-cli.phar to /usr/local/bin/wp
+    sudo mv wp-cli.phar /usr/local/bin/wp
+
+    # Make it executable
+    sudo chmod +x /usr/local/bin/wp
+
+    echo "WP-CLI installed successfully."
+}
+
 # Check if WP-CLI is installed
 if ! command -v wp &> /dev/null
 then
-    echo "WP-CLI is not installed. Please install WP-CLI to run this script."
-    exit 1
+    echo "WP-CLI is not installed."
+    read -p "Would you like to install WP-CLI now? (y/n): " choice
+    case "$choice" in 
+        y|Y ) install_wp_cli ;;
+        n|N ) echo "Exiting. Please install WP-CLI to run this script." && exit 1 ;;
+        * ) echo "Invalid choice. Exiting." && exit 1 ;;
+    esac
 fi
 
 # Ensure running as root or with --allow-root
@@ -13,7 +44,6 @@ ALLOW_ROOT="--allow-root"
 echo "== WordPress Core Version =="
 core_version=$(wp core version $ALLOW_ROOT)
 core_update=$(wp core check-update $ALLOW_ROOT | awk 'NR>1 {print "Current Version: " $1 ", Update Available: " $2}')
-
 
 echo "Current Version: $core_version"
 if [ -z "$core_update" ]; then
@@ -25,7 +55,7 @@ fi
 echo ""
 
 # 2. Display the last database backup from UpdraftPlus
-echo "Backups avaliable:"
+echo "Backups available:"
 wp eval '
 $backups = UpdraftPlus_Backup_History::get_history();
 foreach ($backups as $timestamp => $backup) {
@@ -45,7 +75,7 @@ echo ""
 echo "== Plugin Versions and Updates =="
 wp plugin list --fields=name,version,update_version --format=table --allow-root | awk 'NR>1 && $3 != "" {print "" $1 "\t " $2 "\t" $3}'
 
-echo " "
+echo ""
 
 echo "Test sending mails:"
 wp eval 'wp_mail("marcin@matrixinternet.ie", "Test Email", "This is a test email from WP-CLI.");' --allow-root
