@@ -1,39 +1,48 @@
 #!/bin/bash
-#export client customers from woocomerce
 
-# Automatically detect wp-config.php in current directory
-WP_CONFIG_PATH="$(pwd)/wp-config.php"
+# Default wp-config.php path one level up
+WP_CONFIG_PATH="../wp-config.php"
 
-# Verify wp-config.php exists
-if [ ! -f "$WP_CONFIG_PATH" ]; then
-  echo "❌ wp-config.php not found in current directory."
+if [[ ! -f "$WP_CONFIG_PATH" ]]; then
+  echo "❌ wp-config.php not found at $WP_CONFIG_PATH"
   exit 1
 fi
 
-# Extract DB credentials from wp-config.php
-DB_NAME=$(grep "define('DB_NAME'" "$WP_CONFIG_PATH" | cut -d \' -f 4)
-DB_USER=$(grep "define('DB_USER'" "$WP_CONFIG_PATH" | cut -d \' -f 4)
-DB_PASSWORD=$(grep "define('DB_PASSWORD'" "$WP_CONFIG_PATH" | cut -d \' -f 4)
-DB_HOST=$(grep "define('DB_HOST'" "$WP_CONFIG_PATH" | cut -d \' -f 4)
+extract_credential() {
+  local key=$1
+  grep -E "define\( *'$key'" "$WP_CONFIG_PATH" | sed -E "s/.*define\( *'$key', *'([^']+)'.*/\1/"
+}
+
+DB_NAME=$(extract_credential "DB_NAME")
+DB_USER=$(extract_credential "DB_USER")
+DB_PASSWORD=$(extract_credential "DB_PASSWORD")
+DB_HOST=$(extract_credential "DB_HOST")
 
 if [[ -z "$DB_NAME" || -z "$DB_USER" || -z "$DB_PASSWORD" || -z "$DB_HOST" ]]; then
   echo "❌ Could not extract DB credentials from wp-config.php."
   exit 1
 fi
 
-echo "Using database: $DB_NAME"
-echo "Using user: $DB_USER"
-echo "Using host: $DB_HOST"
+TABLE_PREFIX=$(grep "table_prefix" "$WP_CONFIG_PATH" | cut -d\' -f2)
 
-# Create output directory if it doesn't exist
-OUTPUT_DIR="./wp-content/uploads/$(date +%Y)/$(date +%m)"
-mkdir -p "$OUTPUT_DIR"
+echo "✅ Extracted DB credentials:"
+echo "DB_NAME: $DB_NAME"
+echo "DB_USER: $DB_USER"
+echo "DB_PASSWORD: [hidden]"
+echo "DB_HOST: $DB_HOST"
+echo "Table prefix extracted from wp-config.php: '$TABLE_PREFIX'"
 
-# Output CSV path
-OUTPUT_PATH="$OUTPUT_DIR/customers.csv"
+read -rp "Press Enter to use this prefix or type a different prefix (including trailing underscore if any): " input_prefix
+if [[ -n "$input_prefix" ]]; then
+  TABLE_PREFIX=$input_prefix
+fi
 
-# SQL query to export WooCommerce customer data including hashed passwords
-QUERY="SELECT 
+echo "Using table prefix: '$TABLE_PREFIX'"
+
+# Save output in current folder
+OUTPUT_PATH="./customers.csv"
+
+QUERY="SELECT
   u.ID AS user_id,
   u.user_email,
   u.user_pass AS hashed_password,
@@ -47,34 +56,85 @@ QUERY="SELECT
   um_billing_postcode.meta_value AS billing_postcode,
   um_billing_country.meta_value AS billing_country,
   um_billing_state.meta_value AS billing_state
-FROM ${DB_NAME}.pnz_users u
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_first_name ON u.ID = um_first_name.user_id AND um_first_name.meta_key = 'first_name'
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_last_name ON u.ID = um_last_name.user_id AND um_last_name.meta_key = 'last_name'
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_billing_phone ON u.ID = um_billing_phone.user_id AND um_billing_phone.meta_key = 'billing_phone'
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_billing_address_1 ON u.ID = um_billing_address_1.user_id AND um_billing_address_1.meta_key = 'billing_address_1'
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_billing_address_2 ON u.ID = um_billing_address_2.user_id AND um_billing_address_2.meta_key = 'billing_address_2'
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_billing_city ON u.ID = um_billing_city.user_id AND um_billing_city.meta_key = 'billing_city'
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_billing_postcode ON u.ID = um_billing_postcode.user_id AND um_billing_postcode.meta_key = 'billing_postcode'
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_billing_country ON u.ID = um_billing_country.user_id AND um_billing_country.meta_key = 'billing_country'
-LEFT JOIN ${DB_NAME}.pnz_usermeta um_billing_state ON u.ID = um_billing_state.user_id AND um_billing_state.meta_key = 'billing_state'
+FROM ${DB_NAME}.${TABLE_PREFIX}users u
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_first_name ON u.ID = um_first_name.user_id AND um_first_name.meta_key = 'first_name'
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_last_name ON u.ID = um_last_name.user_id AND um_last_name.meta_key = 'last_name'
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_phone ON u.ID = um_billing_phone.user_id AND um_billing_phone.meta_key = 'billing_phone'
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_address_1 ON u.ID = um_billing_address_1.user_id AND um_billing_address_1.meta_key = 'billing_address_1'
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_address_2 ON u.ID = um_billing_address_2.user_id AND um_billing_address_2.meta_key = 'billing_address_2'
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_city ON u.ID = um_billing_city.user_id AND um_billing_city.meta_key = 'billing_city'
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_postcode ON u.ID = um_billing_postcode.user_id AND um_billing_postcode.meta_key = 'billing_postcode'
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_country ON u.ID = um_billing_country.user_id AND um_billing_country.meta_key = 'billing_country'
+LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_state ON u.ID = um_billing_state.user_id AND um_billing_state.meta_key = 'billing_state'
 WHERE u.ID IN (
   SELECT DISTINCT postmeta.meta_value
-  FROM ${DB_NAME}.pnz_postmeta postmeta
-  JOIN ${DB_NAME}.pnz_posts posts ON posts.ID = postmeta.post_id
+  FROM ${DB_NAME}.${TABLE_PREFIX}postmeta postmeta
+  JOIN ${DB_NAME}.${TABLE_PREFIX}posts posts ON posts.ID = postmeta.post_id
   WHERE posts.post_type = 'shop_order'
     AND postmeta.meta_key = '_customer_user'
     AND postmeta.meta_value != '0'
 );"
 
-echo "Running query and exporting to CSV..."
+run_export() {
+  echo "Running query and exporting to CSV..."
+  mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" --batch --skip-column-names -e "$QUERY" > "$OUTPUT_PATH"
+  return $?
+}
 
-# Run query and export to CSV (tab-separated, no column names)
-mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" --batch --skip-column-names -e "$QUERY" > "$OUTPUT_PATH"
+run_export
+status=$?
 
-if [ $? -eq 0 ]; then
-  echo "✅ Export completed successfully!"
-  echo "File saved to: $OUTPUT_PATH"
-else
+if [ $status -ne 0 ]; then
   echo "❌ Export failed."
-fi
+  echo "The table prefix '$TABLE_PREFIX' may be incorrect."
+  read -rp "Enter the correct table prefix (including trailing underscore if any), or 'q' to quit: " new_prefix
+  if [[ "$new_prefix" == "q" ]]; then
+    echo "Exiting."
+    exit 1
+  fi
+  if [[ -n "$new_prefix" ]]; then
+    TABLE_PREFIX=$new_prefix
+    echo "Retrying with prefix: '$TABLE_PREFIX'..."
+    QUERY="SELECT
+      u.ID AS user_id,
+      u.user_email,
+      u.user_pass AS hashed_password,
+      'bcrypt' AS hash_algorithm,
+      um_first_name.meta_value AS first_name,
+      um_last_name.meta_value AS last_name,
+      um_billing_phone.meta_value AS billing_phone,
+      um_billing_address_1.meta_value AS billing_address_1,
+      um_billing_address_2.meta_value AS billing_address_2,
+      um_billing_city.meta_value AS billing_city,
+      um_billing_postcode.meta_value AS billing_postcode,
+      um_billing_country.meta_value AS billing_country,
+      um_billing_state.meta_value AS billing_state
+    FROM ${DB_NAME}.${TABLE_PREFIX}users u
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_first_name ON u.ID = um_first_name.user_id AND um_first_name.meta_key = 'first_name'
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_last_name ON u.ID = um_last_name.user_id AND um_last_name.meta_key = 'last_name'
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_phone ON u.ID = um_billing_phone.user_id AND um_billing_phone.meta_key = 'billing_phone'
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_address_1 ON u.ID = um_billing_address_1.user_id AND um_billing_address_1.meta_key = 'billing_address_1'
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_address_2 ON u.ID = um_billing_address_2.user_id AND um_billing_address_2.meta_key = 'billing_address_2'
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_city ON u.ID = um_billing_city.user_id AND um_billing_city.meta_key = 'billing_city'
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_postcode ON u.ID = um_billing_postcode.user_id AND um_billing_postcode.meta_key = 'billing_postcode'
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_country ON u.ID = um_billing_country.user_id AND um_billing_country.meta_key = 'billing_country'
+    LEFT JOIN ${DB_NAME}.${TABLE_PREFIX}usermeta um_billing_state ON u.ID = um_billing_state.user_id AND um_billing_state.meta_key = 'billing_state'
+    WHERE u.ID IN (
+      SELECT DISTINCT postmeta.meta_value
+      FROM ${DB_NAME}.${TABLE_PREFIX}postmeta postmeta
+      JOIN ${DB_NAME}.${TABLE_PREFIX}posts posts ON posts.ID = postmeta.post_id
+      WHERE posts.post_type = 'shop_order'
+        AND postmeta.meta_key = '_customer_user'
+        AND postmeta.meta_value != '0'
+    );"
+    run_export
+    if [ $? -eq 0 ]; then
+      echo "✅ Export completed successfully!"
+      echo "File saved to: $OUTPUT_PATH"
+    else
+      echo "❌ Export failed again. Please check manually."
+      exit 1
+    fi
+  else
+    echo "No prefix
 
