@@ -14,7 +14,7 @@ For fast config of jailed SFTP just run:
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/fast-sftp.sh)
 ```
-
+Get list of the plugins to be updated:
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/wp-info.sh)
