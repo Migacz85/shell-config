@@ -74,7 +74,7 @@ fi
 # Ensure correct permissions
 chown root:root "$JAIL_HOME"
 chmod 755 "$JAIL_HOME"
-chown "$SFTP_USER":"$WEB_SERVER_GROUP" "$JAIL_FILES"
+chown -R "$SFTP_USER":"$WEB_SERVER_GROUP" "$JAIL_FILES"
 
 # --- 7. SSH Configuration ---
 SSHD_CONFIG="/etc/ssh/sshd_config"
