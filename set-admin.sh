@@ -2,48 +2,49 @@
 
 set -e
 
-# ----------- CONFIG -----------
+echo "🚀 WordPress Admin Creator + Secure Share Link"
 
-DEFAULT_TMP_DIR="/var/www/html/tmp"
-HTML_EXPIRY_DAYS=7
+# Prompt for user info
+read -p "🧑 Enter WordPress admin username: " ADMIN_USER
+read -p "📧 Enter admin email: " ADMIN_EMAIL
 
-# ----------- HELPERS -----------
-
-generate_password() {
-  tr -dc 'A-Za-z0-9!@#$%&*()-_=+' < /dev/urandom | head -c 16
-}
-
-is_wordpress_install() {
-  [[ -f "$1/wp-config.php" && -f "$1/wp-load.php" ]]
-}
-
-label_path() {
-  local path="$1"
-  if [[ "$path" =~ staging|Staging|\.staging ]]; then
-    echo "Staging"
-  else
-    echo "Primary"
+# Ensure wp-cli is installed
+install_wp_cli() {
+  if ! command -v wp &> /dev/null; then
+    echo "📦 Installing wp-cli..."
+    curl -s -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    chmod +x wp-cli.phar
+    mv wp-cli.phar /usr/local/bin/wp || sudo mv wp-cli.phar /usr/local/bin/wp
   fi
 }
 
-extract_apache_paths() {
-  local files
-  files=$(find /etc/apache2/sites-enabled /etc/apache2/sites-available -type f 2>/dev/null)
-  for file in $files; do
-    grep -i "DocumentRoot" "$file" | awk '{print $2}' | sed 's/"//g'
-  done | sort -u
-}
+install_wp_cli
 
-find_wordpress_paths() {
-  local candidates=()
-  for path in $(extract_apache_paths); do
-    if is_wordpress_install "$path"; then
-      candidates+=("$path")
-    fi
+# 🔍 Find WP installs by scanning Apache virtual hosts
+find_wp_paths() {
+  apache_conf_dirs=(/etc/apache2/sites-enabled /etc/httpd/conf.d)
+  declare -a wp_paths
+
+  for dir in "${apache_conf_dirs[@]}"; do
+    [[ -d "$dir" ]] || continue
+    while IFS= read -r file; do
+      while IFS= read -r docroot; do
+        [[ -d "$docroot" && -f "$docroot/wp-config.php" ]] && wp_paths+=("$docroot")
+      done < <(grep -iR "<DocumentRoot" "$file" | sed -E 's/.*<DocumentRoot\s+([^>]+)>.*/\1/' | sed 's/"//g')
+    done < <(find "$dir" -type f)
   done
-  echo "${candidates[@]}"
+
+  echo "${wp_paths[@]}"
 }
 
+# 🧠 Label function for displaying domain
+label_path() {
+  local path=$1
+  domain=$(grep -i ServerName "$path/../*" 2>/dev/null | awk '{print $2}' | head -n 1)
+  echo "${domain:-unknown}"
+}
+
+# 🔽 Choose install path if more than one
 choose_path() {
   local paths=("$@")
   local count=${#paths[@]}
@@ -74,127 +75,76 @@ choose_path() {
   fi
 }
 
-install_wpcli() {
-  if command -v wp &>/dev/null; then return 0; fi
+# Use safe temp file to avoid output bugs with subshells
+TMP_INSTALL_PATH_FILE=$(mktemp)
+choose_path $(find_wp_paths) > "$TMP_INSTALL_PATH_FILE"
+INSTALL_PATH=$(<"$TMP_INSTALL_PATH_FILE")
+rm "$TMP_INSTALL_PATH_FILE"
 
-  echo "🛠 Installing wp-cli..."
-  curl -s -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-  chmod +x wp-cli.phar
-  mv wp-cli.phar /usr/local/bin/wp
+cd "$INSTALL_PATH"
 
-  if ! command -v wp &>/dev/null; then
-    echo "❌ Failed to install wp-cli."
-    exit 1
-  fi
-}
+# Generate random password
+PASSWORD=$(openssl rand -base64 16)
 
-create_wp_admin() {
-  local path="$1"
-  local username="$2"
-  local email="$3"
-  local password="$4"
+# Create admin user with wp-cli
+wp user create "$ADMIN_USER" "$ADMIN_EMAIL" --user_pass="$PASSWORD" --role=administrator --skip-email
 
-  cd "$path"
+echo "✅ Admin user '$ADMIN_USER' created in $INSTALL_PATH"
 
-  if wp user get "$username" &>/dev/null; then
-    echo "👤 Updating existing user '$username'"
-    wp user update "$username" --user_pass="$password"
-  else
-    echo "👤 Creating new admin user '$username'"
-    wp user create "$username" "$email" --role=administrator --user_pass="$password"
-  fi
-}
-
-generate_html() {
-  local tmp_dir="$1"
-  local username="$2"
-  local password="$3"
-  local url_root="$4"
-
-  mkdir -p "$tmp_dir"
-
-  local token
-  token=$(head /dev/urandom | tr -dc a-z0-9 | head -c 16)
-  local file="$tmp_dir/pwshare_${token}.php"
-  local url="$url_root/tmp/pwshare_${token}.php"
-
-  cat > "$file" <<EOF
-<?php
-@unlink(__FILE__);
-?>
+# Create HTML password file
+UUID=$(uuidgen)
+TMP_PASS_FILE="/var/www/html/.one-time-pass-${UUID}.html"
+cat > "$TMP_PASS_FILE" <<EOF
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>WordPress Admin Credentials</title>
-  <style>
-    body { font-family: sans-serif; background: #f9f9f9; padding: 2em; }
-    .box { background: white; padding: 2em; border-radius: 8px; max-width: 600px; margin: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .creds { font-family: monospace; background: #eee; padding: 1em; border-radius: 4px; }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h2>✅ WordPress Admin Access</h2>
-    <p>Below are your credentials (this page deletes itself after viewing):</p>
-    <div class="creds">
-      Username: <strong>$username</strong><br>
-      Password: <strong>$password</strong>
-    </div>
-    <p>🧨 This page has now self-destructed.</p>
-  </div>
-</body>
+<html>
+  <head><meta charset="UTF-8"><title>Credentials</title></head>
+  <body style="font-family:sans-serif; background:#f9f9f9; padding:2em">
+    <h2>🔐 WordPress Admin Created</h2>
+    <p><strong>Username:</strong> $ADMIN_USER</p>
+    <p><strong>Password:</strong> <code id="pass">$PASSWORD</code></p>
+    <p><em>This link is one-time. Refreshing will destroy the file.</em></p>
+    <script>
+      fetch(window.location.href, { method: 'DELETE' });
+    </script>
+  </body>
 </html>
 EOF
 
-  chmod 600 "$file"
-  echo "$url"
-}
-
-setup_cron_cleanup() {
-  local dir="$1"
-  local cmd="find $dir -type f -name 'pwshare_*.php' -mtime +$HTML_EXPIRY_DAYS -exec rm -f {} \;"
-  (crontab -l 2>/dev/null | grep -F "$cmd") || (
-    (crontab -l 2>/dev/null; echo "0 3 * * * $cmd") | crontab -
-    echo "🧹 Cron job added for automatic cleanup."
-  )
-}
-
-# ----------- MAIN -----------
-
-if [[ "$EUID" -ne 0 ]]; then
-  echo "❌ Please run as root (needed to install wp-cli and access Apache configs)."
-  exit 1
+# Create .htaccess to delete the file after first view using mod_rewrite
+HTACCESS_FILE="/var/www/html/.htaccess"
+if ! grep -q "RewriteEngine On" "$HTACCESS_FILE" 2>/dev/null; then
+  echo "RewriteEngine On" >> "$HTACCESS_FILE"
 fi
+cat >> "$HTACCESS_FILE" <<EOF
 
-echo "🚀 WordPress Admin Creator + Secure Share Link"
+# Auto-delete one-time pass file after viewing
+RewriteCond %{REQUEST_URI} ^/\.one-time-pass-${UUID}\.html$
+RewriteRule .* - [E=DELETE_ME:1]
+EOF
 
-read -rp "🧑 Enter WordPress admin username: " USERNAME
-read -rp "📧 Enter admin email: " EMAIL
+# Apache cleanup hook
+cat >> /etc/apache2/apache2.conf <<EOF
 
-PASSWORD=$(generate_password)
+# Hook: delete one-time password files if env DELETE_ME is set
+<FilesMatch "\.one-time-pass-.*\.html$">
+  SetEnvIf DELETE_ME 1 DELETE_NOW
+</FilesMatch>
+EOF
 
-# Step 1: Find WP install path
-paths=($(find_wordpress_paths))
-INSTALL_PATH=$(choose_path "${paths[@]}")
+# Background script to delete file after 1 read
+cat > /usr/local/bin/delete-once.sh <<'EOS'
+#!/bin/bash
+sleep 2
+rm -f "$1"
+EOS
+chmod +x /usr/local/bin/delete-once.sh
 
-# Step 2: Install wp-cli if needed
-install_wpcli
+# Add delete-once call to Apache custom log
+echo "CustomLog \"|/usr/local/bin/delete-once.sh $TMP_PASS_FILE\" combined env=DELETE_NOW" >> /etc/apache2/apache2.conf
 
-# Step 3: Create/update admin
-create_wp_admin "$INSTALL_PATH" "$USERNAME" "$EMAIL" "$PASSWORD"
+# Reload Apache to apply rules
+systemctl reload apache2
 
-# Step 4: Get domain for link
-DOMAIN=$(grep -iR ServerName /etc/apache2/sites-enabled /etc/apache2/sites-available 2>/dev/null | grep "$INSTALL_PATH" | awk '{print $2}' | head -n1)
-URL_ROOT="http://${DOMAIN:-localhost}"
-
-# Step 5: Generate self-destructing credentials page
-SHARE_URL=$(generate_html "$DEFAULT_TMP_DIR" "$USERNAME" "$PASSWORD" "$URL_ROOT")
-echo -e "\n🔗 Share this secure ONE-TIME link with the client:"
-echo "$SHARE_URL"
-
-# Step 6: Setup cleanup cron job
-setup_cron_cleanup "$DEFAULT_TMP_DIR"
-
-exit 0
+LINK="http://$(hostname -I | awk '{print $1}')/.one-time-pass-${UUID}.html"
+echo "🔗 Share this one-time secure link: $LINK"
 
