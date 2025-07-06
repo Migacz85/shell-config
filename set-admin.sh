@@ -54,21 +54,23 @@ choose_path() {
   elif [[ "$count" -eq 1 ]]; then
     echo "✅ Found WordPress installation: ${paths[0]}" >&2
     echo "${paths[0]}"
-  else
-    echo "🔍 Multiple WordPress installations detected:" >&2
-    for i in "${!paths[@]}"; do
-      label=$(label_path "${paths[$i]}")
-      echo "[$((i+1))] ${paths[$i]} ($label)" >&2
-    done
+    return
+  fi
 
-    echo -n "👉 Choose installation number: " >&2
-    read -r choice
-    if [[ "$choice" =~ ^[0-9]+$ && "$choice" -ge 1 && "$choice" -le "$count" ]]; then
-      echo "${paths[$((choice-1))]}"
-    else
-      echo "❌ Invalid selection." >&2
-      exit 1
-    fi
+  echo "🔍 Multiple WordPress installations detected:" >&2
+  for i in "${!paths[@]}"; do
+    label=$(label_path "${paths[$i]}")
+    echo "[$((i+1))] ${paths[$i]} ($label)" >&2
+  done
+
+  echo -n "👉 Choose installation number: " >&2
+  read -r choice
+
+  if [[ "$choice" =~ ^[0-9]+$ && "$choice" -ge 1 && "$choice" -le "$count" ]]; then
+    echo "${paths[$((choice-1))]}"
+  else
+    echo "❌ Invalid selection." >&2
+    exit 1
   fi
 }
 
