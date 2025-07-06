@@ -7,11 +7,17 @@ This scripts are designed to configure a fresh Bash environment on a Debian syst
 To run one of the scripts, let say you want to execute `init.sh` you can use the following command:
 
 ```bash
-git clone --depth 1 https://github.com/Migacz85/shell-config && chmod +x -R shell-config/ && ./shell-config/init.sh 
+bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/init.sh)
 ```
+For fast config of jailed SFTP just run:
 
 ```bash
-git clone --depth 1 https://github.com/Migacz85/shell-config && chmod +x -R shell-config/ && ./shell-config/wp_info.sh 
+bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/fast-sftp.sh)
+```
+
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/wp-info.sh)
 ```
 
 
