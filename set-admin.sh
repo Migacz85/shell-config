@@ -22,16 +22,20 @@ install_wp_cli
 
 # 🔍 Find WP installs by scanning Apache virtual hosts
 find_wp_paths() {
-  apache_conf_dirs=(/etc/apache2/sites-enabled /etc/httpd/conf.d)
-  declare -a wp_paths
+  apache_conf_dirs=(/etc/apache2/sites-enabled)
+  declare -a wp_paths=()
 
   for dir in "${apache_conf_dirs[@]}"; do
     [[ -d "$dir" ]] || continue
-    while IFS= read -r file; do
-      while IFS= read -r docroot; do
-        [[ -d "$docroot" && -f "$docroot/wp-config.php" ]] && wp_paths+=("$docroot")
-      done < <(grep -iR "<DocumentRoot" "$file" | sed -E 's/.*<DocumentRoot\s+([^>]+)>.*/\1/' | sed 's/"//g')
-    done < <(find "$dir" -type f)
+
+    # Extract DocumentRoot lines without angle brackets, clean spaces/quotes
+    mapfile -t docroots < <(grep -i 'DocumentRoot' "$dir"/* | awk '{print $2}' | sed 's/"//g' | tr -d '\r')
+
+    for docroot in "${docroots[@]}"; do
+      if [[ -d "$docroot" && -f "$docroot/wp-config.php" ]]; then
+        wp_paths+=("$docroot")
+      fi
+    done
   done
 
   echo "${wp_paths[@]}"
