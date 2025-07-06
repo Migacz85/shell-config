@@ -11,8 +11,7 @@
 apt install -y ranger &&
 apt install -y vim &&
 apt install -y xsel &&
-
-git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf &&
+apt install -y fzf 
 
 #add ctrl + r for history to shell
 BASHRC="$HOME/.bashrc"
