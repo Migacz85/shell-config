@@ -1,1 +1,8 @@
 .aider*
+# Aider AI pair programming files
+.aider*
+.aider.*
+.aider/
+.aider.chat.history.md
+.aider.conf.yml
+.aider.ignore
