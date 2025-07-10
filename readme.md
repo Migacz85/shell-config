@@ -4,22 +4,10 @@ These scripts are designed to configure a fresh Bash environment on a Debian sys
 
 ## Usage
 
-To run a script interactively:
+To run scripts interactively:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/run-scripts.sh)
+bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/run.sh)
 ```
 
-Or for direct execution:
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/init.sh)
-```
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/fast-sftp.sh)
-```
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/Migacz85/shell-config/refs/heads/main/wp-info.sh)
-```
+This will show a menu of available scripts with descriptions.
