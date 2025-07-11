@@ -1,46 +1,38 @@
 #!/bin/bash
 
-# Install useful tools
+# Install all tools at once
 apt install -y ranger vim xsel fzf
 
-# Create helper file path
-HELPER_FILE="$HOME/.bash_helpers"
+# Update bash configuration to include helper file
+trap 'echo "Update cancelled"; exit' SIGINT
 
-# Only add function if not already present
-if grep -q "__fzf_history_search" "$HELPER_FILE" 2>/dev/null; then
-  echo "Helper function already present in $HELPER_FILE"
-else
-  # Create or update helper file
-  echo "Updating helper file at $HELPER_FILE..."
-  
-  # Add function with marker comments
-  cat << 'EOF' > "$HELPER_FILE"
+echo -e "\n\033[1;36mUpdating bash configuration...\033[0m"
+config_line='[ -f ~/.bash_helpers ] && . ~/.bash_helpers'
+bashrc_path="$HOME/.bashrc"
 
-# Automatically added function - DO NOT EDIT BELOW THIS LINE
+# Add helper file source if missing
+if ! grep -qF "$config_line" "$bashrc_path"; then
+    echo -e "\n# Source helper functions if they exist\n$config_line" >> "$bashrc_path"
+    echo "Added helper source to $bashrc_path"
+fi
+
+# Ensure helper function exists
+helper_path="$HOME/.bash_helpers"
+if ! grep -q "__fzf_history_search" "$helper_path" 2>/dev/null; then
+    cat << EOF > "$helper_path"
 # fzf-based reverse history search
 __fzf_history_search() {
-  local selected=$(HISTTIMEFORMAT= history | fzf +s --tac | sed 's/ *[0-9]* *//')
-  if [ -n "$selected" ]; then
-    READLINE_LINE="$selected"
-    READLINE_POINT=${#READLINE_LINE}
+  local selected=\$(HISTTIMEFORMAT= history | fzf +s --tac | sed 's/ *[0-9]* *//')
+  if [ -n "\$selected" ]; then
+    READLINE_LINE="\$selected"
+    READLINE_POINT=\${#READLINE_LINE}
   fi
 }
 
 bind -x '"\C-r": __fzf_history_search'
 EOF
+    echo "Created helper file at $helper_path"
 fi
 
-# Update .bashrc to source the helper file
-BASHRC="$HOME/.bashrc"
-SOURCE_HELPER_LINE='[ -f ~/.bash_helpers ] && . ~/.bash_helpers'
-
-# Add sourcing command if not present
-if grep -q "$SOURCE_HELPER_LINE" "$BASHRC"; then
-  echo "Helper file sourcing already present in $BASHRC"
-else
-  echo "Adding sourcing of helper file to $BASHRC..."
-  echo -e "\n# Source helper functions if they exist\n$SOURCE_HELPER_LINE" >> "$BASHRC"
-  echo "Done. Please run: source ~/.bashrc to reload your configuration."
-fi
-
-echo "All done! Press ctrl+R to browse history."
+echo -e "\033[1;32mAll done! Press Ctrl+R to browse history.\033[0m"
+echo "Run: source ~/.bashrc to refresh"
