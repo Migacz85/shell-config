@@ -1,17 +1,7 @@
 #!/bin/bash
 
-# This script is for configuration of fresh bash on Debian
-
-# Here is example how you can run bash script that is held in github repository
-# Run script with: 
-# git clone --depth 1 https://github.com/Migacz85/shell-config && chmod +x -R shell-config/ && ./shell-config/init.sh
-
-##### Config starts here:
-
-apt install -y ranger &&
-apt install -y vim &&
-apt install -y xsel &&
-apt install -y fzf 
+# Install useful tools
+apt install -y ranger vim xsel fzf
 
 # Create helper file for bash functions and bindings
 HELPER_FILE="$HOME/.bash_helpers"
@@ -31,19 +21,17 @@ __fzf_history_search() {
 bind -x '"\C-r": __fzf_history_search'
 EOF
 
-# Now, update .bashrc to source the helper file
+# Update .bashrc to source the helper file
 BASHRC="$HOME/.bashrc"
 SOURCE_HELPER_LINE='[ -f ~/.bash_helpers ] && . ~/.bash_helpers'
 
-# Check if the line is already in .bashrc
-if ! grep -q "$SOURCE_HELPER_LINE" "$BASHRC"; then
-  echo "Adding sourcing of helper file to $BASHRC..."
-  echo "" >> "$BASHRC"
-  echo "# Source helper functions if they exist" >> "$BASHRC"
-  echo "$SOURCE_HELPER_LINE" >> "$BASHRC"
-  echo "Done. Please run: source ~/.bashrc to reload your configuration."
-else
+# Add sourcing command if not present
+if grep -q "$SOURCE_HELPER_LINE" "$BASHRC"; then
   echo "Helper file sourcing already present in $BASHRC"
+else
+  echo "Adding sourcing of helper file to $BASHRC..."
+  echo -e "\n# Source helper functions if they exist\n$SOURCE_HELPER_LINE" >> "$BASHRC"
+  echo "Done. Please run: source ~/.bashrc to reload your configuration."
 fi
 
-echo "All done, git, ranger, vim and fzf autocompletion is installed. Press ctrl+R to browse history"
+echo "All done! Press ctrl+R to browse history."
