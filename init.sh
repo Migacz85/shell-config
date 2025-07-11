@@ -1,57 +1,16 @@
 #!/bin/bash
 
-# Always get the latest helper file from the repo
-get_helper_file() {
-    helper_url="https://raw.githubusercontent.com/yourusername/yourrepo/main/.bash_helpers"
-    helper_path="$HOME/.bash_helpers.dist"
+# Get latest helper file from repo
+download_helper_file() {
+    helper_url="https://raw.githubusercontent.com/Migacz85/shell-config/main/.bash_helpers"
+    helper_path="$HOME/.bash_helpers"
 
     echo "Downloading latest bash helpers..."
-    if curl -fsSL -o "$helper_path" "$helper_url"; then
-        echo "Successfully downloaded helper file"
-    else
-        echo "Download failed, using built-in helper content"
-        cat << EOF > "$helper_path"
-# fzf-based reverse history search
-__fzf_history_search() {
-  local selected=\$(HISTTIMEFORMAT= history | fzf +s --tac | sed 's/ *[0-9]* *//')
-  if [ -n "\$selected" ]; then
-    READLINE_LINE="\$selected"
-    READLINE_POINT=\${#READLINE_LINE}
-  fi
-}
-
-bind -x '"\C-r": __fzf_history_search'
-
-# --- Colors for better output ---
-C_RESET='\033[0m'
-C_RED='\033[0;31m'
-C_GREEN='\033[0;32m'
-C_YELLOW='\033[0;33m'
-C_BLUE='\033[0;34m'
-C_CYAN='\033[0;36m'
-
-# --- Utility Functions ---
-info() { echo -e "${C_BLUE}INFO:${C_RESET} $1" >&2; }
-warn() { echo -e "${C_YELLOW}WARN:${C_RESET} $1" >&2; }
-error() { echo -e "${C_RED}ERROR:${C_RESET} $1" >&2; exit 1; }
-success() { echo -e "${C_GREEN}SUCCESS:${C_RESET} $1" >&2; }
-
-find_wp_installations() {
-  info "Searching for WordPress installations..."
-  local search_paths=("/var/www" "/srv/www" "/usr/share/nginx" "$HOME")
-  local found_paths
-  found_paths=$(find "${search_paths[@]}" -maxdepth 4 -type f -name "wp-settings.php" -printf "%h\n" 2>/dev/null | sort -u)
-  if [[ -z "$found_paths" ]]; then
-    warn "Standard search failed. Trying 'wp find-installations'..."
-    found_paths=$(wp find-installations --skip-packages --quiet 2>/dev/null | awk '{print $2}')
-  fi
-  echo "$found_paths"
-}
-EOF
+    if ! curl -fsSL -o "$helper_path" "$helper_url"; then
+        echo "ERROR: Failed to download helper file. Manual configuration required"
+        exit 1
     fi
-
-    cp -f "$helper_path" "$HOME/.bash_helpers"
-    rm -f "$helper_path"
+    echo "Successfully updated helper file"
 }
 
 # Install all tools at once
