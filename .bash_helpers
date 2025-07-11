@@ -25,14 +25,14 @@ success() { echo -e "SUCCESS: " >&2; }
 
 find_wp_installations() {
   info "Searching for WordPress installations..."
-  local search_paths=("/var/www" "/srv/www" "/usr/share/nginx" "/home/migacz")
+  local search_paths=("/var/www" "/srv/www" "/usr/share/nginx" "$HOME")
   local found_paths
-  found_paths=
-  if [[ -z "" ]]; then
+  found_paths=$(find "${search_paths[@]}" -maxdepth 4 -type f -name "wp-settings.php" -printf "%h\n" 2>/dev/null | sort -u)
+  if [[ -z "$found_paths" ]]; then
     warn "Standard search failed. Trying 'wp find-installations'..."
-    found_paths=
+    found_paths=$(wp find-installations --skip-packages --quiet 2>/dev/null | awk '{print $2}')
   fi
-  echo ""
+  echo "$found_paths"
 }
 
 wpcd() {
