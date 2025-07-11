@@ -13,17 +13,12 @@ apt install -y vim &&
 apt install -y xsel &&
 apt install -y fzf 
 
-#add ctrl + r for history to shell
-BASHRC="$HOME/.bashrc"
-FZF_BINDING_FUNCTION="__fzf_history_search"
-FZF_BINDING_LINE='bind -x '"'"'\C-r": __fzf_history_search'"'"''
+# Create helper file for bash functions and bindings
+HELPER_FILE="$HOME/.bash_helpers"
+echo "Creating helper file at $HELPER_FILE..."
 
-# Check if the function is already in .bashrc
-if ! grep -q "$FZF_BINDING_FUNCTION" "$BASHRC"; then
-  echo "Adding fzf Ctrl+R binding to $BASHRC..."
-
-  cat << 'EOF' >> "$BASHRC"
-
+# Write the function and binding to the helper file
+cat << 'EOF' > "$HELPER_FILE"
 # fzf-based reverse history search
 __fzf_history_search() {
   local selected=$(HISTTIMEFORMAT= history | fzf +s --tac | sed 's/ *[0-9]* *//')
@@ -36,15 +31,19 @@ __fzf_history_search() {
 bind -x '"\C-r": __fzf_history_search'
 EOF
 
+# Now, update .bashrc to source the helper file
+BASHRC="$HOME/.bashrc"
+SOURCE_HELPER_LINE='[ -f ~/.bash_helpers ] && . ~/.bash_helpers'
 
-  echo "Done. Please run: source ~/.bashrc"
+# Check if the line is already in .bashrc
+if ! grep -q "$SOURCE_HELPER_LINE" "$BASHRC"; then
+  echo "Adding sourcing of helper file to $BASHRC..."
+  echo "" >> "$BASHRC"
+  echo "# Source helper functions if they exist" >> "$BASHRC"
+  echo "$SOURCE_HELPER_LINE" >> "$BASHRC"
+  echo "Done. Please run: source ~/.bashrc to reload your configuration."
 else
-  echo "fzf Ctrl+R binding already present in $BASHRC"
+  echo "Helper file sourcing already present in $BASHRC"
 fi
-
-
-
-source ~/.bashrc
-
 
 echo "All done, git, ranger, vim and fzf autocompletion is installed. Press ctrl+R to browse history"
