@@ -31,7 +31,7 @@ if ! grep -qF "$config_line" "$bashrc_path"; then
 fi
 
 # Always replace with latest helper file
-get_helper_file
+download_helper_file
 
 echo -e "\033[1;32mAll done! Press Ctrl+R to browse history.\033[0m"
 echo "Run: source ~/.bashrc to refresh"

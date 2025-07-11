@@ -1,0 +1,11 @@
+# fzf-based reverse history search
+__fzf_history_search() {
+  local selected=$(HISTTIMEFORMAT= history | fzf +s --tac | sed 's/ *[0-9]* *//')
+  if [ -n "$selected" ]; then
+    READLINE_LINE="$selected"
+    READLINE_POINT=${#READLINE_LINE}
+  fi
+}
+
+bind -x '"\C-r": __fzf_history_search'
+EOF
