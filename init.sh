@@ -5,6 +5,8 @@ download_helper_file() {
     helper_url="https://raw.githubusercontent.com/Migacz85/shell-config/main/.bash_helpers"
     helper_path="$HOME/.bash_helpers"
 
+    rm $helper_path
+
     echo "Downloading latest bash helpers..."
     if ! curl -fsSL -o "$helper_path" "$helper_url"; then
         echo "ERROR: Failed to download helper file. Manual configuration required"
