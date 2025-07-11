@@ -36,6 +36,7 @@ __fzf_history_search() {
 bind -x '"\C-r": __fzf_history_search'
 EOF
 
+
   echo "Done. Please run: source ~/.bashrc"
 else
   echo "fzf Ctrl+R binding already present in $BASHRC"
